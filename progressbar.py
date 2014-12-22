@@ -6,6 +6,8 @@
 import time
 import sys
 
+# Dict for picking element colors
+# TODO: Expand? Darks/lights?
 bcolors = {
     'K' : '\033[90m',
     'R' : '\033[91m',
@@ -20,9 +22,8 @@ class ProgressBar(object):
     """ This is a super simple progress bar for the command line.  """
 
     # TODO: Testing.
-    # TODO: A version of this that you can just say increment to X percent done.
-    # TODO: Add colors.
-    def __init__(self, steps, fillchar = '|'):
+    # TODO: Threshold coloring
+    def __init__(self, steps, width = 0.25, fillchar = '|'):
         """
         The number of steps until the bar gets to 100%
         steps: Number of times the object's update_progress() can be called
@@ -31,7 +32,7 @@ class ProgressBar(object):
         self._curr = 0
         self._steps = steps
         self._msg = None
-        self._width = 4
+        self._width = width
 
         self._bcol = bcolors['N']
         self._pcol = bcolors['N']
@@ -42,58 +43,51 @@ class ProgressBar(object):
         else:
             self._fillchar = fillchar
 
-    # TODO: Get the size of the terminal (Get it everytime here or just once in __init__ ?)
-    def update_progress(self, msg = None):
-        """
-        Update the progress bar status and print it.
-        If msg=None, then use previous message, if no previous message, do not use second row.
-        If msg=<some string> print it and store it as the previously used string.
-        If msg=<some string>, then upon next call msg=None, the old string will be printed.
-        """
+### Manipulate
+    def add_progress(self, msg = None):
+        """ Adds one tick to the progress bar and redraws """
         if self._curr > self._steps:
             raise Exception("Progress bar already completed")
+        self.inc_curr()
+        self.draw(msg)
 
-        # Store previous message if provided.
-        self._msg = self._mcol + msg + bcolors['N'] if msg != None else self._msg
+    def lose_progress(self, msg = None):
+        """ Removes one tick from the progress bar and redraws """
+        if self._curr == 0:
+            raise Exception("Progress bar already empty")
+        self.dec_curr()
+        self.draw(msg)
 
-        # Move to appropriate location to change progress bar and message.
-        self.move_up_as_needed()
-        self.move_to_start_of_line()
+    def change_progress(self, pnt, msg = None):
+        """
+        Moves the progress bar to the specified tick and redraws
+        pnt: Point to set the new current position
+        """
+        if self._steps < pnt:
+            raise Exception("Point is outside the bounds of the progress bar")
+        self.rep_curr(pnt)
+        self.draw(msg)
 
-        print self.get_progress_bar()
-        if self._msg:
-            # TODO: Or just pad msg with space characters?
-            self.clear_curr_line()          # Clear the line with the old message on it. If the old message is larger parts of it will remain if you just do a print.
-            print self._msg
-        sys.stdout.flush()
-
+    def inc_curr(self):
+        """ Adds one tick to the progress bar """
         self._curr += 1
 
-    def dec_progress(self, msg = None):
-        if self._curr < 0:
-            raise Exception("Progress bar already empty")
-
-        # Store previous message if provided.
-        self._msg = self._mcol + msg + bcolors['N'] if msg != None else self._msg
-
-        # Move to appropriate location to change progress bar and message.
-        self.move_up_as_needed()
-        self.move_to_start_of_line()
-
-        print self.get_progress_bar()
-        if self._msg:
-            # TODO: Or just pad msg with space characters?
-            self.clear_curr_line()          # Clear the line with the old message on it. If the old message is larger parts of it will remain if you just do a print.
-            print self._msg
-        sys.stdout.flush()
-
+    def dec_curr(self):
+        """ Removes one tick from the progress bar """
         self._curr -= 1
 
-    def move_progress_to(self, point, msg = None):
-        # We don't care if we've already reached full for this
-        # We do care about trying to jump to a point greater than 100%
-        if self._steps < point:
-            raise Exception("Point is outside the bounds of the progress bar")
+    def rep_curr(self, pnt):
+        """
+        Moves the progress bar to the specified tick
+        pnt: Point to set the new current position
+        """
+        self._curr = pnt
+
+### Create
+    def draw(self, msg = None):
+        """ 
+        Draws the progress bar as it currently exists or with the specified message
+        msg: Optional new message for the progress bar """
         self._msg = self._mcol + msg + bcolors['N'] if msg != None else self._msg
 
         self.move_up_as_needed()
@@ -105,9 +99,19 @@ class ProgressBar(object):
             print self._msg
         sys.stdout.flush()
 
-        # Set our current value to the point we want to jump to
-        self._curr = point
+    def get_progress_bar(self):
+        """
+        Outputs the progress bar string.
+        """
+        reserved_char_count = 2     # For start and ending character of the progress bar.
+        progress_chars_max = self.get_terminal_width() - reserved_char_count
+        progress_chars_max = int(self._width * progress_chars_max)    # Arbitrarily make it 1/4th the number of chars that can fit onscreen.
+        percent_done = float(self._curr) / self._steps
+        progress = int(percent_done * progress_chars_max)
+        bar = "[" + self._bcol.ljust(progress_chars_max, ' ') + bcolors['N'] + "]"
+        return bar.replace(' ', self._fillchar, progress) + self._pcol + ' {}%'.format(percent_done*100) + bcolors['N']
 
+### Move
     def move_up_as_needed(self):
         """
         Move up in the term once or twice, depending on if you have a message.
@@ -143,12 +147,7 @@ class ProgressBar(object):
         """
         print ' '.ljust(self.get_terminal_width()-1), '\r',
 
-    def set_width(self, width):
-        """
-        Sets what we divide the terminal width by when drawing the progress bar
-        """
-        self._width = width
-
+### Colors
     def set_bar_color(self, col):
         """
         Sets the progress bar color
@@ -172,16 +171,3 @@ class ProgressBar(object):
         """
         if col in bcolors:
             self._mcol = bcolors[col]
-
-    def get_progress_bar(self):
-        """
-        Outputs the progress bar string.
-        """
-        reserved_char_count = 2     # For start and ending character of the progress bar.
-        progress_chars_max = self.get_terminal_width() - reserved_char_count
-        progress_chars_max /= self._width    # Arbitrarily make it 1/4th the number of chars that can fit onscreen.
-        percent_done = float(self._curr) / self._steps
-        progress = int(percent_done * progress_chars_max)
-        bar = "[" + self._bcol.ljust(progress_chars_max, ' ') + bcolors['N'] + "]"
-        return bar.replace(' ', self._fillchar, progress) + self._pcol + ' {}%'.format(percent_done*100) + bcolors['N']
-
