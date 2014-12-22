@@ -104,6 +104,7 @@ class ProgressBar(object):
         self.move_up_as_needed()
         self.move_to_start_of_line()
 
+        self.clear_curr_line()
         print self.get_progress_bar()
         if self._msg:
             self.clear_curr_line()
