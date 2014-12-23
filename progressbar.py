@@ -23,7 +23,7 @@ class ProgressBar(object):
 
     # TODO: Testing.
     # TODO: Threshold coloring
-    def __init__(self, steps, pos = 0, width = 0.25, ansi = False, fillchar = '|'):
+    def __init__(self, steps, pos = -1, width = 0.25, ansi = False, fillchar = '|'):
         """
         The number of steps until the bar gets to 100%
         width: Fraction of the terminal width to use (must be less than one)
@@ -34,6 +34,10 @@ class ProgressBar(object):
         self._curr = 0
         self._steps = steps
         self._msg = None
+
+        if pos < 0 and pos != -1:
+            raise Exception("Position cannot be negative")
+
         self._pos = pos
 
         if width > 1:
@@ -132,7 +136,7 @@ class ProgressBar(object):
         """
         Move up in the term once or twice, depending on if you have a message.
         """
-        if self._pos == 0:
+        if self._pos == -1:
             if self._curr != 0:
                 self.move_up_one_line()
                 if self._msg != None:
