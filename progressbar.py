@@ -109,10 +109,10 @@ class ProgressBar(object):
         self.move_to_start_of_line()
 
         self.clear_curr_line()
-        print self.get_progress_bar()
+        sys.stdout.write(self.get_progress_bar() + '\n')
         if self._msg:
             self.clear_curr_line()
-            print self._msg
+            sys.stdout.write(self._msg + '\n')
         sys.stdout.flush()
 
     def get_progress_bar(self):
@@ -134,7 +134,7 @@ class ProgressBar(object):
 ### Move
     def move_up_as_needed(self):
         """
-        Move up in the term once or twice, depending on if you have a message.
+        Move up in the term once or twice, depending on if you have a message, or to the bar's configured position
         """
         if self._pos == -1:
             if self._curr != 0:
@@ -142,7 +142,7 @@ class ProgressBar(object):
                 if self._msg != None:
                     self.move_up_one_line()
         else:
-            print "\033[{};1f".format(self._pos * 2)
+            sys.stdout.write("\033[{};1f".format(self._pos * 2))
 
     def get_terminal_width(self):
         """
@@ -156,19 +156,19 @@ class ProgressBar(object):
         """
         Moves to the start of the current line.
         """
-        print "\r",
+        sys.stdout.write("\r")
 
     def move_up_one_line(self):
         """
         Moves up one line in the terminal.
         """
-        print "\033[1A",
+        sys.stdout.write("\033[1A")
 
     def clear_curr_line(self):
         """
         Clears the current line by filling with spaces then moves to the start.
         """
-        print ' '.ljust(self.get_terminal_width()-1), '\r',
+        sys.stdout.write(' '.ljust(self.get_terminal_width()-1) + '\r')
 
 ### Colors
     def set_bar_color(self, col):
