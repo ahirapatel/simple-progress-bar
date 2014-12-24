@@ -23,16 +23,28 @@ class ProgressBar(object):
 
     # TODO: Testing.
     # TODO: Threshold coloring
-    def __init__(self, steps, width = 0.25, fillchar = '|'):
+    def __init__(self, steps, pos = -1, width = 0.25, ansi = False, fillchar = '|'):
         """
         The number of steps until the bar gets to 100%
+        width: Fraction of the terminal width to use (must be less than one)
+        ansi: Enables/disables use of ANSI color codes (disabled by default for Windows support)
         steps: Number of times the object's update_progress() can be called
         fillchar: The character to fill the bar with.
         """
         self._curr = 0
         self._steps = steps
         self._msg = None
+
+        if pos < 0 and pos != -1:
+            raise Exception("Position cannot be negative")
+
+        self._pos = pos
+
+        if width > 1:
+            raise Exception("Width cannot be greater than 100%")
+
         self._width = width
+        self._ansi = ansi
 
         self._bcol = bcolors['N']
         self._pcol = bcolors['N']
@@ -88,15 +100,19 @@ class ProgressBar(object):
         """ 
         Draws the progress bar as it currently exists or with the specified message
         msg: Optional new message for the progress bar """
-        self._msg = self._mcol + msg + bcolors['N'] if msg != None else self._msg
+        if self._ansi:
+            self._msg = self._mcol + msg + bcolors['N'] if msg != None else self._msg
+        else:
+            self._msg = msg if msg != None else self._msg
 
         self.move_up_as_needed()
         self.move_to_start_of_line()
 
-        print self.get_progress_bar()
+        self.clear_curr_line()
+        sys.stdout.write(self.get_progress_bar() + '\n')
         if self._msg:
             self.clear_curr_line()
-            print self._msg
+            sys.stdout.write(self._msg + '\n')
         sys.stdout.flush()
 
     def get_progress_bar(self):
@@ -108,18 +124,25 @@ class ProgressBar(object):
         progress_chars_max = int(self._width * progress_chars_max)    # Arbitrarily make it 1/4th the number of chars that can fit onscreen.
         percent_done = float(self._curr) / self._steps
         progress = int(percent_done * progress_chars_max)
-        bar = "[" + self._bcol.ljust(progress_chars_max, ' ') + bcolors['N'] + "]"
-        return bar.replace(' ', self._fillchar, progress) + self._pcol + ' {}%'.format(percent_done*100) + bcolors['N']
+        if self._ansi:
+            bar = "[" + self._bcol.ljust(progress_chars_max, ' ') + bcolors['N'] + "]"
+            return bar.replace(' ', self._fillchar, progress) + self._pcol + ' {}%'.format(percent_done*100) + bcolors['N']
+        else:
+            bar = "[".ljust(progress_chars_max, ' ') + "]"
+            return bar.replace(' ', self._fillchar, progress) + ' {}%'.format(percent_done*100)
 
 ### Move
     def move_up_as_needed(self):
         """
-        Move up in the term once or twice, depending on if you have a message.
+        Move up in the term once or twice, depending on if you have a message, or to the bar's configured position
         """
-        if self._curr != 0:
-            self.move_up_one_line()
-            if self._msg != None:
+        if self._pos == -1:
+            if self._curr != 0:
                 self.move_up_one_line()
+                if self._msg != None:
+                    self.move_up_one_line()
+        else:
+            sys.stdout.write("\033[{};1f".format(self._pos * 2))
 
     def get_terminal_width(self):
         """
@@ -133,19 +156,19 @@ class ProgressBar(object):
         """
         Moves to the start of the current line.
         """
-        print "\r",
+        sys.stdout.write("\r")
 
     def move_up_one_line(self):
         """
         Moves up one line in the terminal.
         """
-        print "\033[1A",
+        sys.stdout.write("\033[1A")
 
     def clear_curr_line(self):
         """
         Clears the current line by filling with spaces then moves to the start.
         """
-        print ' '.ljust(self.get_terminal_width()-1), '\r',
+        sys.stdout.write(' '.ljust(self.get_terminal_width()-1) + '\r')
 
 ### Colors
     def set_bar_color(self, col):
