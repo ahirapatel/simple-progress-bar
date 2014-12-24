@@ -3,7 +3,7 @@ from progressbar import ProgressBar
 import time
 
 def main():
-    progress = ProgressBar(10, width = 0.5, ansi = True, fillchar = '#')
+    progress = ProgressBar(10, width = 0.5, fillchar = '#')
 
     progress.set_bar_color('G')
     progress.set_perc_color('C')

@@ -5,6 +5,7 @@
 
 import time
 import sys
+import platform
 
 # Dict for picking element colors
 # TODO: Expand? Darks/lights?
@@ -23,7 +24,7 @@ class ProgressBar(object):
 
     # TODO: Testing.
     # TODO: Threshold coloring
-    def __init__(self, steps, pos = -1, width = 0.25, ansi = False, fillchar = '|'):
+    def __init__(self, steps, pos = -1, width = 0.25, ansi = True, fillchar = '|'):
         """
         The number of steps until the bar gets to 100%
         width: Fraction of the terminal width to use (must be less than one)
@@ -45,6 +46,8 @@ class ProgressBar(object):
 
         self._width = width
         self._ansi = ansi
+        if platform.system() = 'Windows'
+        self._ansi = False
 
         self._bcol = bcolors['N']
         self._pcol = bcolors['N']
