@@ -129,10 +129,10 @@ class ProgressBar(object):
         progress = int(percent_done * progress_chars_max)
         if self._ansi:
             bar = "[" + self._bcol.ljust(progress_chars_max, ' ') + bcolors['N'] + "]"
-            return bar.replace(' ', self._fillchar, progress) + self._pcol + ' {}%'.format(percent_done*100) + bcolors['N']
+            return bar.replace(' ', self._fillchar, progress) + self._pcol + ' {:.1%}'.format(percent_done) + bcolors['N']
         else:
             bar = "[".ljust(progress_chars_max, ' ') + "]"
-            return bar.replace(' ', self._fillchar, progress) + ' {}%'.format(percent_done*100)
+            return bar.replace(' ', self._fillchar, progress) + ' {:.1%}'.format(percent_done)
 
 ### Move
     def move_up_as_needed(self):
