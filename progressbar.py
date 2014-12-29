@@ -46,7 +46,7 @@ class ProgressBar(object):
 
         self._width = width
         self._ansi = ansi
-        if platform.system() == 'Windows'
+        if platform.system() == 'Windows':
             self._ansi = False
 
         self._bcol = bcolors['N']
